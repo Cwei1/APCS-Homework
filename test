@@ -49,3 +49,74 @@ else
 {
     /* opendir() failed for some other reason. */
 }
+
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <string.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <errno.h>
+
+int filecompare(const char *file_one, const char *file_two){
+	char *buf[2048];
+	char *buf2[2048];
+	int fd,fd2,bytesread, bytesread2, index, index2;
+	int equal = 1;
+	fd = open(file_one, O_RDONLY);
+	fd2 = open(file_two, O_RDONLY);
+	index = 0;
+	index2=0;
+	//This is done in case the buffer used is not large enough to hold the file.
+	while ((bytesread = read(fd, buf + index, 2048)) > 0 && (bytesread2 = read(fd2, buf2 + index2, 2048)) > 0){
+		index=index+bytesread;
+		index2=index2+bytesread2;
+		if(memcmp(buf, buf2, 2048)!=0){
+			equal=-1;
+		}
+	}
+	return equal;
+}
+
+void listdir(const char *input, const char *compfile){
+	DIR *dir;
+	struct dirent *direc;
+	dir = opendir(input);
+	if (dir){
+		while (direc = readdir(dir)) {
+			char overallpath[1024];
+			if (direc->d_type == DT_DIR) {
+				char path[1024];
+				char pathname[1024]="";
+				if (strcmp(direc->d_name, ".") == 0 || strcmp(direc->d_name, "..") == 0){
+					continue;
+				}
+				snprintf(path, sizeof(path), "%s/%s", input, direc->d_name);
+				strcat(pathname,input);
+				strcat(pathname,"/");
+				strcat(pathname, direc->d_name);
+				strncpy(overallpath,path, sizeof(overallpath));
+
+				listdir(path, compfile);
+			} 
+			else {
+				if(filecompare(direc->d_name, compfile)==1){
+					printf("Match for file %s found at path: %s. Name of file is: %s\n", compfile, overallpath, direc->d_name);
+					break;
+				}
+			}
+		}
+		closedir(dir);
+	}
+	else if (ENOENT == errno){
+		printf("directory unable to be found\n");   
+	}
+}
+
+int main(int argc, char *argv[]) {
+	listdir(argv[1], argv[2]);
+	return 0;
+}
