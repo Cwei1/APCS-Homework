@@ -3,6 +3,10 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <errno.h>
+
 
 void listdir(const char *name, int indent)
 {
