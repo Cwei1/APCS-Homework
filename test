@@ -195,3 +195,39 @@ int main(int argc, char *argv[]) {
 	listdir(argv[1], argv[2]);
 	return 0;
 }
+if(fileStat.st_dev == testStat.st_dev && fileStat.st_ino == testStat.st_ino) // inode match
+					{
+						//file is a hard link of target
+						printf("%s\t\t HARD LINK TO TARGET", testPath);
+					}
+					else if ( testStat.st_mode == S_IFLNK)
+					{
+						//file is a SYMLINK
+						//check if it is a symlink of original file or a simlynk to a hard link or something else
+						//create a buffer, read simlink into the buffer, and then check if it is the same as the path
+						char testContents[2048];
+						int fo = open(testPath, O_RDONLY, 0666);
+						if (fo < 0)
+						{
+							fprintf(stderr, "Error opening file %s: %s\n",testPath, strerror(errno));
+						}
+						int fr = read( fo, testContents, sizeof(testContents) -1);
+						if (fr < 0)
+						{
+							fprintf( stderr, "3Error reading file %s: %s\n", testPath, strerror(errno));
+						}
+						int symlk = memcmp( testContents,pathname, sizeof(testContents)-1);
+						if (!symlink)
+						{
+							printf("%s\t\t SYMLINK RESOLVES TO TARGET", testPath);
+						}
+						else 
+						{
+							printf("%s\t\t SYMLINK RESOLVES TO DUPLICATE: %s", testPath, testContents);
+						}
+						int ccc = close(fo);
+					}
+					else
+					{		//FILE IS A DUPLICATE OF TARGET (NLINK) == 2
+							printf("%s\t\t DUPLICATE OF TARGET (NLINK =	%n)\t", testPath, testStat.st_nlink);
+					}
