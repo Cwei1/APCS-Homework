@@ -116,7 +116,7 @@ void findfile(const char *input, const char *compfile){
 							printf("NOT READABLE BY OTHER\n");
 						}
 					}
-					continue; //Change this to continue; if you want to search for ALL copies of the file in the directory
+					continue; 
 				}
 	        }    
 		}
