@@ -1,239 +1,5 @@
 #include <unistd.h>
 #include <sys/types.h>
-#include <dirent.h>
-#include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <errno.h>
-
-
-void listdir(const char *name, int indent)
-{
-    DIR *dir;
-    struct dirent *entry;
-
-    if (!(dir = opendir(name)))
-        return;
-
-    while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_DIR) {
-            char path[1024];
-            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-                continue;
-            snprintf(path, sizeof(path), "%s/%s", name, entry->d_name);
-            printf("%*s[%s]\n", indent, "", entry->d_name);
-            listdir(path, indent + 2);
-        } else {
-            printf("%*s- %s\n", indent, "", entry->d_name);
-        }
-    }
-    closedir(dir);
-}
-
-int main(void) {
-    listdir(".", 0);
-    return 0;
-}
-DIR* dir = opendir("mydir");
-if (dir)
-{
-    /* Directory exists. */
-    closedir(dir);
-}
-else if (ENOENT == errno)
-{
-    /* Directory does not exist. */
-}
-else
-{
-    /* opendir() failed for some other reason. */
-}
-
-
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <errno.h>
-
-int filecompare(const char *file_one, const char *file_two){
-	char *buf[2048];
-	char *buf2[2048];
-	int fd,fd2,bytesread, bytesread2, index, index2;
-	int equal = 1;
-	fd = open(file_one, O_RDONLY);
-	fd2 = open(file_two, O_RDONLY);
-	index = 0;
-	index2=0;
-	//This is done in case the buffer used is not large enough to hold the file.
-	while ((bytesread = read(fd, buf + index, 2048)) > 0 && (bytesread2 = read(fd2, buf2 + index2, 2048)) > 0){
-		index=index+bytesread;
-		index2=index2+bytesread2;
-		if(memcmp(buf, buf2, 2048)!=0){
-			equal=-1;
-		}
-	}
-	return equal;
-}
-
-void listdir(const char *input, const char *compfile){
-	DIR *dir;
-	struct dirent *direc;
-	dir = opendir(input);
-	if (dir){
-		while (direc = readdir(dir)) {
-			char overallpath[1024];
-			if (direc->d_type == DT_DIR) {
-				char path[1024];
-				char pathname[1024]="";
-				if (strcmp(direc->d_name, ".") == 0 || strcmp(direc->d_name, "..") == 0){
-					continue;
-				}
-				snprintf(path, sizeof(path), "%s/%s", input, direc->d_name);
-				strcat(pathname,input);
-				strcat(pathname,"/");
-				strcat(pathname, direc->d_name);
-				strncpy(overallpath,path, sizeof(overallpath));
-
-				listdir(path, compfile);
-			} 
-			else {
-				if(filecompare(direc->d_name, compfile)==1){
-					printf("Match for file %s found at path: %s. Name of file is: %s\n", compfile, overallpath, direc->d_name);
-					break;
-				}
-			}
-		}
-		closedir(dir);
-	}
-	else if (ENOENT == errno){
-		printf("directory unable to be found\n");   
-	}
-}
-
-int main(int argc, char *argv[]) {
-	listdir(argv[1], argv[2]);
-	return 0;
-}
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <errno.h>
-
-size_t filesize(const char *file){
-	struct stat test;
-	if (stat(file,&test)<0){
-		return 0;
-	}
-	return test.st_size;
-}
-
-int filecompare(const char *file_one, const char *file_two){
-
-	char buf[2048]="";
-	char buf2[2048]="";
-	int fd,fd2,bytesread, bytesread2, index, index2;
-	int equal = 0;
-	fd = open(file_one, O_RDONLY);
-	fd2 = open(file_two, O_RDONLY);
-	index = 0;
-	index2=0;
-	if (filesize(file_one) != filesize(file_two)){
-		equal=-1;
-	}
-	else{
-	//This is done in case the buffer used is not large enough to hold the file.
-		while ((bytesread = read(fd, buf + index, sizeof(buf))) > 0 && (bytesread2 = read(fd2, buf2 + index2, sizeof(buf2))) > 0){
-			index=index+bytesread;
-			index2=index2+bytesread2;
-			int same=memcmp(buf, buf2, sizeof(buf));
-			if(same!=0){
-				equal=-1;
-				printf("%i\n", equal);
-			}
-		}
-	}
-	if (equal==0){
-		equal = 1;
-	}
-	return equal;
-}
-
-void listdir(const char *input, const char *compfile){
-    DIR *dir;
-    struct dirent *direc;
-    if (!(dir = opendir(input))){
-		return;
-    }
-    while ((direc = readdir(dir)) != NULL) {
-    	char path[1024]="";
-        if (strcmp(direc->d_name, ".") == 0 || strcmp(direc->d_name, "..") == 0){
-            continue;
-        }
-        snprintf(path, sizeof(path), "%s/%s", input, direc->d_name);
-        listdir(path, compfile);
-        printf("%s\n", path);
-        if(filecompare(path, compfile) > 0){
-			printf("Match for file %s found at path: %s. Name of file is: %s\n", compfile, path, direc->d_name);
-			break;
-		}
-	}
-	closedir(dir);
-}
-
-int main(int argc, char *argv[]) {
-	listdir(argv[1], argv[2]);
-	return 0;
-}
-if(fileStat.st_dev == testStat.st_dev && fileStat.st_ino == testStat.st_ino) // inode match
-					{
-						//file is a hard link of target
-						printf("%s\t\t HARD LINK TO TARGET", testPath);
-					}
-					else if ( testStat.st_mode == S_IFLNK)
-					{
-						//file is a SYMLINK
-						//check if it is a symlink of original file or a simlynk to a hard link or something else
-						//create a buffer, read simlink into the buffer, and then check if it is the same as the path
-						char testContents[2048];
-						int fo = open(testPath, O_RDONLY, 0666);
-						if (fo < 0)
-						{
-							fprintf(stderr, "Error opening file %s: %s\n",testPath, strerror(errno));
-						}
-						int fr = read( fo, testContents, sizeof(testContents) -1);
-						if (fr < 0)
-						{
-							fprintf( stderr, "3Error reading file %s: %s\n", testPath, strerror(errno));
-						}
-						int symlk = memcmp( testContents,pathname, sizeof(testContents)-1);
-						if (!symlink)
-						{
-							printf("%s\t\t SYMLINK RESOLVES TO TARGET", testPath);
-						}
-						else 
-						{
-							printf("%s\t\t SYMLINK RESOLVES TO DUPLICATE: %s", testPath, testContents);
-						}
-						int ccc = close(fo);
-					}
-					else
-					{		//FILE IS A DUPLICATE OF TARGET (NLINK) == 2
-							printf("%s\t\t DUPLICATE OF TARGET (NLINK =	%n)\t", testPath, testStat.st_nlink);
-					}
-					
-#include <unistd.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <stdio.h>
@@ -298,58 +64,69 @@ int filecompare(const char *file_one, const char *file_two){
 	return equal;
 }
 
-void listdir(const char *input, const char *compfile){
+void findfile(const char *input, const char *compfile){
 	struct stat pathStat;
 	struct stat fileStat;
+	struct stat pathStat2;
 	int z = stat(compfile, &fileStat);
 	if (z<0){
 		fprintf(stderr, "Unable to access file information for %s: %s\n",  compfile, strerror(errno));
 	}
     DIR *dir;
     struct dirent *direc;
-    if (!(dir = opendir(input))){
-		fprintf(stderr, "Could not open directory %s: %s\n", input,strerror(errno));
-		return;
-    }
-    while ((direc = readdir(dir)) != NULL) {
-    	if (direc<0){
-			fprintf(stderr, "Unable to read directory %s: %s\n",  input, strerror(errno));
-		}
-    	char path[1024]="";
-        if (strcmp(direc->d_name, ".") == 0 || strcmp(direc->d_name, "..") == 0){
-            continue;
-        }
-        snprintf(path, sizeof(path), "%s/%s", input, direc->d_name);
-        listdir(path, compfile);
-        printf("%s\n", path);
-        int x = lstat(path, &pathStat);
-        if (x<0){
-			fprintf(stderr, "Unable to access file information for %s: %s\n",  path, strerror(errno));
-		}
-        unsigned short y = pathStat.st_mode;
-        if (S_ISREG(y) || S_ISLNK(y)){
-        	int equality = filecompare(path, compfile);
-        	if(equality > 0){
-				printf("Match for file %s found at path: %s. Name of file is: %s\n", compfile, path, direc->d_name);
-				if(pathStat.st_mode == S_IFLNK){
-					if (fileStat.st_dev == pathStat.st_dev && fileStat.st_ino == pathStat.st_ino){
-						printf("%s is a SYMLINK to target\n", path);
+    
+    if (dir = opendir(input)){
+	    while ((direc = readdir(dir)) != NULL) {
+	    	if (direc<0){
+				fprintf(stderr, "Unable to read directory %s: %s\n",  input, strerror(errno));
+			}
+	    	char path[1024]="";
+	        if (strcmp(direc->d_name, ".") == 0 || strcmp(direc->d_name, "..") == 0){
+	            continue;
+	        }
+	        snprintf(path, sizeof(path), "%s/%s", input, direc->d_name);
+	        findfile(path, compfile);
+	        int x = lstat(path, &pathStat);
+	        if (x<0){
+				fprintf(stderr, "Unable to access file information for %s: %s\n",  path, strerror(errno));
+			}
+	        unsigned short y = pathStat.st_mode;
+	        if (S_ISREG(y) || S_ISLNK(y)){
+	        	int equality = filecompare(path, compfile);
+	        	if(equality > 0){
+					printf("Match for file %s found at path: %s. Name of file is: %s\n", compfile, path, direc->d_name);
+					if(S_ISLNK(pathStat.st_mode)){
+						int stated = stat(path, &pathStat2);
+						if (fileStat.st_dev == pathStat2.st_dev && fileStat.st_ino == pathStat2.st_ino){
+							printf("%s is a SYMLINK to target\n", path);
+						}
+						else{
+							printf("%s is a SYMLINK to duplicate\n", path);
+						}
 					}
 					else{
-						printf("%s is a SYMLINK to duplicate\n", path);
+						printf("Matching duplicate found with NLINK = %lu\n", pathStat.st_nlink);
+						if (fileStat.st_dev == pathStat.st_dev && fileStat.st_ino == pathStat.st_ino){
+							printf("%s is a HARDLINK to target\n", path);
+						}
+						if ((y & S_IROTH) && (y & S_IREAD)){
+	          				printf("READABLE BY OTHER\n");
+						}
+						else{
+							printf("NOT READABLE BY OTHER\n");
+						}
 					}
+					continue; //Change this to continue; if you want to search for ALL copies of the file in the directory
 				}
-				else if (fileStat.st_dev == pathStat.st_dev && fileStat.st_ino == pathStat.st_ino){
-					if (pathStat.st_nlink > 1){
-						printf("%s is a HARDLINK to target\n", path);
-					}
-				}
-				else{
-					printf("Matching duplicate found with NLINK = %lu\n", pathStat.st_nlink);
-				}
-				break; //Change this to continue; if you want to search for ALL copies of the file in the directory
-			}
-        }    
+	        }    
+		}
+	}
+	else if (errno = ENOTDIR){
+		return;
+	}
+	else{
+		fprintf(stderr, "Could not open directory %s: %s\n", input,strerror(errno));
+		return;
 	}
 	int a = closedir(dir);
 	if (a < 0){
@@ -358,6 +135,11 @@ void listdir(const char *input, const char *compfile){
 }
 
 int main(int argc, char *argv[]) {
-	listdir(argv[1], argv[2]);
+	if (argc != 3){
+		printf("Please input two values, first the starting directory, and then the file you wish to find a identical copy of");
+	}
+	else{
+		findfile(argv[1], argv[2]);
+	}
 	return 0;
 }
